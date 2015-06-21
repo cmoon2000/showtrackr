@@ -102,8 +102,8 @@ app.get('/api/shows/:id', function (req, res, next) {
 app.post('/api/shows', function (req, res, next) {
 	var apiKey = '9EF1D1E7D28FDA0B';
 	var parser = xml2js.Parser({
-		explicititArray: false,
-		normalizeTags: true
+	    explicitArray: false,
+	    normalizeTags: true
 	});
 	var seriesName = req.body.showName
 		.toLowerCase()
@@ -111,20 +111,22 @@ app.post('/api/shows', function (req, res, next) {
 		.replace(/[^\w-]+/g, '');
 
 	async.waterfall([
+		// Tim kiem dua vao series name
 		function (callback) {
-			request.get('http://thetvdb/api/GetSeries.php?seriesname=' + seriesName, function (error, response, body) {
+			request.get('http://thetvdb.com/api/GetSeries.php?seriesname=' + seriesName, function (error, response, body) {
 				if (error) return next(error);
 				parser.parseString(body, function (err, result) {
 					if (!result.data.series) {
-						return res.send(404, { message: req.body.showName + 'was not found.' });
+						return res.send(404, { message: req.body.showName + ' was not found.' });
 					}
 					var seriesId = result.data.series.seriesid || result.data.series[0].seriesid;
 					callback(err, seriesId);
 				});
 			});
 		},
-		function (seriesId, callback) {
-			request.get('http://thetvdb.com/api' + apiKey + '/series' + seriesId + '/all/en.xml', function (error, response, body) {
+		// Thu dc thong tin tu series name
+		function (seriesId, callback) { 
+			request.get('http://thetvdb.com/api/' + apiKey + '/series/' + seriesId + '/all/en.xml', function (error, response, body) {
 				if (error) return next(error);
 				parser.parseString(body, function (err, result) {
 					var series = result.data.series;
@@ -160,7 +162,7 @@ app.post('/api/shows', function (req, res, next) {
 		},
 		function (show, callback) {
 			var url = 'http://thetvdb.com/banners/' + show.poster;
-			request({ url: url, encoding: null }, function (err, response, body) {
+			request({ url: url, encoding: null }, function (error, response, body) {
 				show.poster = 'data' + response.headers['content-type'] + ';base64,' + body.toString('base64');
 				callback(error, show);
 			});
