@@ -7,10 +7,10 @@
 				<div class="panel-body">
 					<h2 class="text-center">Sign up</h2>
 
-					<div class="form-group" ng-class="{ 'has-success' : signupForm.email.1valid && signupForm.email.1dirty, 'has-error' : signupForm.1invalid && signupForm.email.1dirty }">
+					<div class="form-group" ng-class="{ 'has-success' : signupForm.email.1valid && signupForm.email.$dirty, 'has-error' : signupForm.1invalid && signupForm.email.$dirty }">
 						<input type="email" class="form-control input-lg" id="email" name="email" ng-model="email" placeholder="Email" required autofocus>
 
-						<div class="help-block text-danger" ng-if="signupForm.email.1dirty" ng-messages="signupForm.email.1error">
+						<div class="help-block text-danger" ng-if="signupForm.email.$dirty" ng-messages="signupForm.email.1error">
 							<div ng-message="required">Your email address is required</div>
 							<div ng-message="email">You email address is invalid</div>
 						</div>
@@ -34,7 +34,7 @@
 							   repeat-password="password" placeholder="Confirm Password"
 							   required>
 
-						<div class="help-block text-danger my-special-anmiation" ng-if="signupForm.confirmPassword.1dirty">
+						<div class="help-block text-danger my-special-anmiation" ng-if="signupForm.confirmPassword.$dirty">
 							<div ng-message="required">You must confirm password.</div>
 							<div ng-message="repeat">Passwords do not match.</div>
 						</div>
