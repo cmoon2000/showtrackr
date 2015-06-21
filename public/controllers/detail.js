@@ -9,7 +9,7 @@ angular.module('MyApp')
 				}
 
 				$scope.subscribe = function () {
-					Subsciption.subscribe(show).success(function () {
+					Subscription.subscribe(show).success(function () {
 						$scope.show.subscribers.push($rootScope.currentUser._id);
 					});
 				};
