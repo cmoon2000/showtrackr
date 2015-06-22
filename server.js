@@ -12,6 +12,9 @@ var _ = require('lodash');
 var session = require('express-session');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
+var agenda = require('agenda')({ db: { address: 'localhost:27017/test'} });
+var sugar = require('sugar');
+var nodemailer = require('nodemailer');
 
 var showSchema = new mongoose.Schema({
 	_id: Number,
@@ -186,6 +189,9 @@ app.post('/api/shows', function (req, res, next) {
 					}
 					return next(err);
 				}
+
+				var alertDate = Date.create('Next ' + show.airsDayOfWeek + ' at' + show.airsTime).rewind({ hour: 2 });
+				agenda.schedule(alertDate, 'send email alert', show.name).repeatEvery('1 week');
 				res.send(200);
 			});
 		});
@@ -274,4 +280,77 @@ app.post('/api/unsubscribe', ensureAuthenticated, function (req, res, next) {
 			res.send(200);
 		});
 	});
+});
+
+agenda.define('send email alert', function (job, done) {
+	Show.findOne({ name: job.attrs.data }).populate('subscribers').exec(function (err, show) {
+		var emails = show.subscribers.map(function (user) {
+			return user.email;
+		});
+
+		var upcomingEpisode = show.episodes.filter(function (episode) {
+			return new Date(episode.firstAired) < new Date();
+		})[0];
+		console.log("LOG: upcomingEpisode", upcomingEpisode);
+		/*return;*/
+		// var smtpTransport = nodemailer.createTransport('SMTP', {
+		// 	service: 'sendGrid',
+		// 	auth: { user: 'hslogin', pass: 'hspassword00' }
+		// });
+
+		var mailOptions = {
+			from: 'Fred Foo <foo@blurdybloop.com>',
+			to: emails.join(','),
+			subject: show.name + ' is starting soon!',
+			text: show.name + ' starts in less than 2 hours on ' + show.network + '.\n\n' +
+				'Episode ' + upcomingEpisode.episodeNumber + ' Overview\n\n' + upcomingEpisode.overview
+		};
+
+		// smtpTransport.sendMail(mailOptions, function (error, response) {
+		// 	console.log('Message sent: ' + response.message);
+		// 	smtpTransport.close();
+		// 	done();
+		// });
+
+		var smtpTransport = nodemailer.createTransport("SMTP", {
+			service: "Gmail",
+			auth: {
+			XOAuth2: {
+			 	user: "hainguyenduc91@gmail.com", // Your gmail address.
+			 	                                      // Not @developer.gserviceaccount.com
+			 	clientId: "296677014599-kcq117mhvjb14ggm7jlppreceo9pq8cr.apps.googleusercontent.com",
+			 	clientSecret: "-u6I64ORhbG_nVcCsfeJh-4Q",
+			 	refreshToken: "1/HoZkT6p4BIdXY6OuoMD-5RciMZlDjAkK5SR3xd8yNkZIgOrJDtdun6zK6XiATCKT"
+			}
+}
+		});
+
+		// var mailOptions = {
+		//   from: "hainguyenduc91@gmail.com",
+		//   to: "haindgc00605@fpt.edu.vn",
+		//   subject: "I'm coming",
+		//   generateTextFromHTML: true,
+		//   html: "truman show"
+		// };
+
+		smtpTransport.sendMail(mailOptions, function(error, response) {
+		  if (error) {
+		    console.log(error);
+		  } else {
+		    console.log(response);
+		  }
+		  smtpTransport.close();
+		  done();
+		});
+	});
+});
+
+agenda.start();
+
+agenda.on('start', function (job) {
+	console.log("LOG: Job %s starting", job.attrs.name);
+});
+
+agenda.on('complete', function (job) {
+	console.log("LOG: Job %s finished", job.attrs.name);
 });
